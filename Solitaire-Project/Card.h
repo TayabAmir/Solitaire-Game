@@ -28,4 +28,5 @@ public:
 		string s = (mapRanks.find(rank) != mapRanks.end()) ? mapRanks[rank] : to_string(rank);
 		cout << s << " Of " << suit << endl;
 	}
+
 };

@@ -92,4 +92,15 @@ public:
         delete temp->next;
         temp->next = NULL;
     }
+
+    int size() {
+        int s = 0;
+        Node<T>*temp = head;
+        while (temp)
+        {
+            s++;
+            temp = temp->next;
+        }
+        return s;
+    }
 };
