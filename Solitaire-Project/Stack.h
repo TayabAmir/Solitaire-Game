@@ -7,63 +7,41 @@ template <typename T>
 
 class Stack
 {
-    LinkedList<T> listToHide;
-    LinkedList<T> listToShow;
+    LinkedList<T> list;
 public:
     Stack() {}
 
-    Stack(const Stack<T>& other) : listToHide(other.listToHide), listToShow(other.listToShow) {}
+    Stack(const Stack<T>& other) : list(other.list) {
+    }
 
-    LinkedList<T> getHideList() {
-        return listToHide;
-    }
-    LinkedList<T> getShowList() {
-        return listToShow;
-    }
     void push(T val)
     {
-        if (listToShow.isEmpty()) {
-            listToShow.insertAtHead(val);
-        }
-        else {
-            T temp = listToShow.getHead()->val;
-            listToShow.deleteFromStart();
-            listToHide.insertAtHead(temp);
-            listToShow.insertAtHead(val);
-        }
-    }
-    void getCards(Stack<T> &st, int noOfCards) {
-        while (noOfCards--) {
-            listToShow.insertAtHead(st.top());
-            st.pop();
-        }
+        list.insertAtHead(val);
     }
     bool empty() {
-        return listToHide.isEmpty() && listToShow.isEmpty();
+        return list.isEmpty();
     }
     int size() {
-        
-        return listToHide.size() + listToShow.size();
+
+        Node<T>* head = list.getHead();
+        int s = 0;
+        while (head)
+            head = head->next, s++;
+        return s;
     }
     void pop()
     {
-        if (!listToShow.isEmpty()) {
-            listToShow.deleteFromStart();
-            if (!listToHide.isEmpty()) {
-                T temp = listToHide.getHead()->val;
-                listToHide.deleteFromStart();
-                listToShow.insertAtHead(temp);
-            }
+        if (!list.isEmpty()) {
+            list.deleteFromStart();
+            return;
         }
-        else{
-            cout << "Segmentation Fault!!";
-            exit(1);
-        }
+        cout << "Segmentation Fault!!";
+        exit(1);
     }
     T& top()
     {
-        if (!listToShow.isEmpty())
-            return listToShow.getHead()->val;
+        if (!list.isEmpty())
+            return list.getHead()->val;
         cout << "Segmentation Fault!!";
         exit(1);
     }

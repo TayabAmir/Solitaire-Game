@@ -1,8 +1,11 @@
-#pragma once
+﻿#pragma once
 #include <iostream>
 #include<string>
+#include<windows.h>
 #include<unordered_map>
 using namespace std;
+
+
 class Card
 {
 	unordered_map<int, string> mapSuits = {
@@ -24,9 +27,8 @@ public:
 		this->isFaceUp = false;
 	}
 
-	void display() {
-		string s = (mapRanks.find(rank) != mapRanks.end()) ? mapRanks[rank] : to_string(rank);
-		cout << s << " Of " << suit << endl;
+	void display() const {
+		string mappedRank = (mapRanks.find(rank) != mapRanks.end()) ? mapRanks.at(rank) : to_string(rank);
+		cout << mappedRank << "[" << suit << "]";
 	}
-
 };
