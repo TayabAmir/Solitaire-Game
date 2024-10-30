@@ -29,6 +29,13 @@ public:
 
 	void display() const {
 		string mappedRank = (mapRanks.find(rank) != mapRanks.end()) ? mapRanks.at(rank) : to_string(rank);
+				//HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+			if (suit == "Hearts" || suit == "Diamonds")
+		{
+			//SetConsoleTextAttribute(hConsole, 4);
+		}
 		cout << mappedRank << "[" << suit << "]";
+		//SetConsoleTextAttribute(hConsole, 1);
+
 	}
 };

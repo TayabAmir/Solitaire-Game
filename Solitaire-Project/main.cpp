@@ -15,7 +15,7 @@ class SolitaireGame {
 private:
     LinkedList<Card> tableaus[7];
     Stack<Card> foundations[4];
-    Stack<Card> stockPile, wastePile;
+    Queue<Card> stockPile, wastePile;
    
     void gotoxy(int x, int y) {
         COORD coord;
@@ -30,7 +30,8 @@ private:
         gotoxy(2, 1);
         cout << "Stock Pile: ";
         if (stockPile.empty()) {
-            cout << "Empty";
+            drawCard();
+            cout << "24 cards";
         }
         else {
             cout << stockPile.size() << " Cards";
@@ -42,7 +43,11 @@ private:
             cout << "Empty";
         }
         else {
-            wastePile.top().display();
+            Queue<Card> temp = wastePile;
+            while (temp.size() > 1) {
+                temp.dequeue();
+            }
+            temp.peek().display();
         }
 
         // Foundations at top right
@@ -109,15 +114,15 @@ private:
         // If stock pile is empty, put all cards from wastepile to stockpile
         if (stockPile.empty()) {
             while (!wastePile.empty()) {
-                stockPile.push(wastePile.top());
-                wastePile.pop();
+                stockPile.enqueue(wastePile.peek());
+                wastePile.dequeue();
             }
         }
         // If stockpile not empty take card from it
         else {
-            wastePile.push(stockPile.top());
-            stockPile.pop();
-            wastePile.top().isFaceUp = true;
+            wastePile.enqueue(stockPile.peek());
+            stockPile.dequeue();
+            wastePile.peek().isFaceUp = true;
         }
     }
 
@@ -145,9 +150,9 @@ private:
         }
         from.getHead()->val.isFaceUp = true;
     }
-    void moveCardFromWtoF(Stack<Card>& w, Stack<Card>& f) {
-        Card c = w.top();
-        w.pop();
+    void moveCardFromWtoF(Queue<Card>& w, Stack<Card>& f) {
+        Card c = w.peek();
+        w.dequeue();
         f.push(c);
     }
 
@@ -156,9 +161,9 @@ private:
         f.push(c);
         t.deleteFromStart();
     }
-    void moveCardFromWtoT(Stack<Card>& w, LinkedList<Card>& t) {
-        Card c = w.top();
-        w.pop();
+    void moveCardFromWtoT(Queue<Card>& w, LinkedList<Card>& t) {
+        Card c = w.peek();
+        w.dequeue();
         t.insertAtHead(c);
     }
 
@@ -192,9 +197,8 @@ public:
 
         // Filling StockPile with Cards
         while (cardIdx < cards.size()) {
-            stockPile.push(cards[cardIdx++]);
+            stockPile.enqueue(cards[cardIdx++]);
         }
-        stockPile.push(Card(1, 1));
     }
 
     void play() {
@@ -256,12 +260,12 @@ public:
                     else if (from == 2) {
                         // From WastePile to Tableau
                         if (to == 1 && toIdx >= 1 && toIdx <= 7) {
-                            if(!wastePile.empty() && isValidMove(wastePile.top(), tableaus[toIdx - 1].getHead()->val))
+                            if(!wastePile.empty() && isValidMove(wastePile.peek(), tableaus[toIdx - 1].getHead()->val))
                                 moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
                         }
                         // From WastePile to Foundation
                         else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
-                            if (!wastePile.empty() && ((wastePile.top().rank == 1 && foundations[toIdx - 1].empty()) || isValidMove(wastePile.top(), foundations[toIdx - 1].top())))
+                            if (!wastePile.empty() && ((wastePile.peek().rank == 1 && foundations[toIdx - 1].empty()) || isValidMove(wastePile.peek(), foundations[toIdx - 1].top())))
                                 moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
                         }
                         else {

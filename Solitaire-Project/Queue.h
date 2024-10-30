@@ -43,7 +43,7 @@ public:
             throw runtime_error("Queue is empty. Cannot dequeue.");
         }
     }
-    T peek()
+    T& peek()
     {
         if (!list.isEmpty())
             return list.getHead()->val;
