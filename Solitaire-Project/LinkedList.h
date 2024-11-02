@@ -8,15 +8,19 @@ class LinkedList
 {
 private:
     Node<T>* head;
+    Node<T>* tail;
+
 public:
     LinkedList()
     {
         head = NULL;
+        tail = NULL;
     }
 
     LinkedList(const LinkedList<T>& other) {
         if (other.head == NULL) {
             head = NULL;
+            tail = NULL;
         }
         else {
             head = new Node<T>(other.head->val);
@@ -28,6 +32,7 @@ public:
                 temp = temp->next;
                 current = current->next;
             }
+            tail = temp;  // Set the tail to the last node
         }
     }
 
@@ -40,27 +45,30 @@ public:
         return head;
     }
 
+    Node<T>* getTail() {
+        return tail;
+    }
+
     void insertAtHead(T val)
     {
         Node<T>* node = new Node<T>(val);
         node->next = head;
         head = node;
+        if (tail == NULL) {
+            tail = head;  // Update tail if the list was empty
+        }
     }
 
     void insertAtEnd(T val)
     {
-        if (!head)
-        {
-            insertAtHead(val);
-            return;
-        }
         Node<T>* node = new Node<T>(val);
-        Node<T>* temp = head;
-        while (temp->next != NULL)
-        {
-            temp = temp->next;
+        if (!head) {
+            head = tail = node;
         }
-        temp->next = node;
+        else {
+            tail->next = node;
+            tail = node;
+        }
     }
 
     bool findNode(T x)
@@ -77,27 +85,38 @@ public:
 
     void deleteFromStart()
     {
-        Node<T>* temp = head;
-        head = head->next;
-        delete temp;
+        if (head) {
+            Node<T>* temp = head;
+            head = head->next;
+            if (head == NULL) {
+                tail = NULL; 
+            }
+            delete temp;
+        }
     }
 
     void deleteFromEnd()
     {
-        Node<T>* temp = head;
-        while (temp->next->next != NULL)
-        {
-            temp = temp->next;
+        if (head) {
+            if (head == tail) {
+                delete head;
+                head = tail = NULL;
+            }
+            else {
+                Node<T>* temp = head;
+                while (temp->next != tail) {
+                    temp = temp->next;
+                }
+                delete tail;
+                tail = temp;
+                tail->next = NULL;
+            }
         }
-        delete temp->next;
-        temp->next = NULL;
     }
-
-
 
     int size() {
         int s = 0;
-        Node<T>*temp = head;
+        Node<T>* temp = head;
         while (temp)
         {
             s++;

@@ -3,7 +3,9 @@
 #include<cstdlib> 
 #include<ctime> 
 #include<algorithm> 
+#include<conio.h> 
 #include<windows.h> 
+#include<unordered_map> 
 #include "Stack.h" 
 #include "Queue.h"
 #include "Card.cpp" 
@@ -16,6 +18,7 @@ private:
     LinkedList<Card> tableaus[7];
     Stack<Card> foundations[4];
     Queue<Card> stockPile, wastePile;
+    unordered_map<int,int> faceupCards;
    
     void gotoxy(int x, int y) {
         COORD coord;
@@ -74,9 +77,7 @@ private:
     }
 
     void printTableau(Node<Card>* temp, int x, int y) {
-
-        Node<Card>* c = reverseList(temp);
-
+        Node<Card>* c = temp;
         while(c)
         {
             gotoxy(x, y);
@@ -188,9 +189,9 @@ public:
         int cardIdx = 0;
         for (int tableauIdx = 0; tableauIdx < 7; tableauIdx++) {
             for (int card = 1; card <= tableauIdx + 1; card++) {
-                tableaus[tableauIdx].insertAtHead(cards[cardIdx]);
+                tableaus[tableauIdx].insertAtEnd(cards[cardIdx]);
                 if (card == tableauIdx + 1)
-                    tableaus[tableauIdx].getHead()->val.isFaceUp = true;
+                    tableaus[tableauIdx].getTail()->val.isFaceUp = true;
                 cardIdx++;
             }
         }
@@ -199,6 +200,8 @@ public:
         while (cardIdx < cards.size()) {
             stockPile.enqueue(cards[cardIdx++]);
         }
+        for(int i = 0; i < 7; i++)
+            faceupCards[i]++;
     }
 
     void play() {
@@ -230,17 +233,13 @@ public:
                             int noOfCards;
                             cout << "Enter Number of Cards you want to move: ";
                             cin >> noOfCards;
+
                             if (tableaus[fromIdx - 1].size() < noOfCards) {
                                 cout << "There are not enough cards in Tableau " << fromIdx << "." << endl;
                                 continue;
                             }
-                            Node<Card>* uppestCard = tableaus[fromIdx - 1].getHead();;
-                            if (noOfCards > 1) {
-                                while (uppestCard->next && uppestCard->next->val.isFaceUp)
-                                    uppestCard = uppestCard->next;
-                            }
 
-                            if (!isValidMove(uppestCard->val, tableaus[toIdx - 1].getHead()->val)) {
+                            if (noOfCards > faceupCards[fromIdx - 1]  || (!isValidMove(tableaus[fromIdx - 1].getTail()->val, tableaus[toIdx - 1].getHead()->val))) {
                                 cout << "Invalid Move." << endl;
                                 continue;
                             }
@@ -289,6 +288,9 @@ public:
                 cout << "Congratulations! You've won the game!" << endl;
                 break;
             }
+
+            _getch();
+
         }
     }
 };
