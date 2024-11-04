@@ -18,7 +18,6 @@ private:
     LinkedList<Card> tableaus[7];
     Stack<Card> foundations[4];
     Queue<Card> stockPile, wastePile;
-    unordered_map<int,int> faceupCards;
    
     void gotoxy(int x, int y) {
         COORD coord;
@@ -26,6 +25,12 @@ private:
         coord.Y = y;
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
     }
+
+    void setConsoleColors(int textColor, int backgroundColor) {
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(hConsole, (backgroundColor << 4) | textColor);
+    }
+
 
     void displayGame() {
         system("cls");
@@ -72,7 +77,7 @@ private:
             gotoxy(x + i * 15, y); 
 
             cout << "Tableau " << i + 1;
-            printTableau(tableaus[i].getHead(), x + i * 15, y + 2);
+            printTableau(tableaus[i].head, x + i * 15, y + 2);
         }
     }
 
@@ -82,7 +87,12 @@ private:
         {
             gotoxy(x, y);
             if (c->val.isFaceUp)
+            {
+                if(c->val.suit == "Hearts" || c->val.suit == "Diamonds")
+                    setConsoleColors(12, 15);
                 c->val.display();
+                setConsoleColors(0, 15);
+            }
             else
                 cout << "Card Down" << endl;
             c = c->next;
@@ -100,7 +110,7 @@ private:
             current = current->next;
         }
 
-        return reversedList.getHead();
+        return reversedList.head;
     }
 
 
@@ -137,35 +147,77 @@ private:
         return true;
     }
     void moveCardBetweenTableaus(LinkedList<Card>& from, LinkedList<Card>& to,int noOfCards) {
-        Node<Card>* head = from.getHead();
-        for (int i = 0; i < noOfCards; ++i) {
-            if (!head->val.isFaceUp) {
-                cout << "Cannot move not visible Cards";
-                return;
-            }
+        Node<Card>* head = from.head;
+        int s = from.size();
+        for (int i = 0; i < s - noOfCards - 1; i++) {
+            head = head->next;
         }
-        for (int i = 0; i < noOfCards; i++) {
-            Card temp = from.getHead()->val;
-            from.deleteFromStart();
-            to.insertAtHead(temp);
-        }
-        from.getHead()->val.isFaceUp = true;
+        to.tail->next = head->next;
+        head->next = NULL;
+        to.tail = from.tail;
+        from.tail = head;
+        from.tail->val.isFaceUp = true;
     }
+
     void moveCardFromWtoF(Queue<Card>& w, Stack<Card>& f) {
+        Queue<Card> temp;
+        while (w.size() > 1){
+            temp.enqueue(w.peek());
+            w.dequeue();
+        }
         Card c = w.peek();
         w.dequeue();
-        f.push(c);
+        if ((c.rank == 1 && f.empty()) || isValidMove(c, f.top())) {
+            c.isFaceUp = true;
+            f.push(c);
+        }
+        else {
+            cout << "Invalid Move";
+            w.enqueue(c);
+        }
+        while (!temp.empty()) {
+            w.enqueue(temp.peek());
+            temp.dequeue();
+        }
     }
 
     void moveCarFromTtoF(LinkedList<Card>& t, Stack<Card>& f) {
-        Card c = t.getHead()->val;
+        Card c = t.tail->val;
         f.push(c);
-        t.deleteFromStart();
+        t.deleteFromEnd();
+        if(t.tail)
+        t.tail->val.isFaceUp = true;
     }
     void moveCardFromWtoT(Queue<Card>& w, LinkedList<Card>& t) {
+        Queue<Card> temp;
+        while (w.size() > 1){
+            temp.enqueue(w.peek());
+            w.dequeue();
+        }
         Card c = w.peek();
         w.dequeue();
-        t.insertAtHead(c);
+        if (isValidMove(c, t.tail->val)) {
+            c.isFaceUp = true;
+            t.insertAtEnd(c);
+        }
+        else {
+            cout << "Invalid Move";
+        }
+        while (!temp.empty()) {
+            w.enqueue(temp.peek());
+            temp.dequeue();
+        }
+    }
+    int noofFaceupCards(LinkedList<Card>& ll) {
+        Node<Card>* temp = ll.head;
+        int s = 0;
+        while (temp) 
+        {
+            if (temp->val.isFaceUp)
+                s++;
+            temp = temp->next;
+        }
+        return s;
     }
 
 public:
@@ -191,7 +243,7 @@ public:
             for (int card = 1; card <= tableauIdx + 1; card++) {
                 tableaus[tableauIdx].insertAtEnd(cards[cardIdx]);
                 if (card == tableauIdx + 1)
-                    tableaus[tableauIdx].getTail()->val.isFaceUp = true;
+                    tableaus[tableauIdx].tail->val.isFaceUp = true;
                 cardIdx++;
             }
         }
@@ -200,14 +252,12 @@ public:
         while (cardIdx < cards.size()) {
             stockPile.enqueue(cards[cardIdx++]);
         }
-        for(int i = 0; i < 7; i++)
-            faceupCards[i]++;
     }
 
     void play() {
         string cmd;
         while (true) {
-            system("Color 70");
+            setConsoleColors(0, 15);
             displayGame();
 
             gotoxy(2, 25);
@@ -238,8 +288,16 @@ public:
                                 cout << "There are not enough cards in Tableau " << fromIdx << "." << endl;
                                 continue;
                             }
+                            if (noOfCards > noofFaceupCards(tableaus[fromIdx - 1])) {
+                                cout << "Not enough face up cards." << endl;
+                                continue;
+                            }
+                            Node<Card>* head = tableaus[fromIdx - 1].head;
+                            for (int i = 0; i < tableaus[fromIdx - 1].size() - noOfCards; i++) {
+                                head = head->next;
+                            }
 
-                            if (noOfCards > faceupCards[fromIdx - 1]  || (!isValidMove(tableaus[fromIdx - 1].getTail()->val, tableaus[toIdx - 1].getHead()->val))) {
+                            if (!isValidMove(head->val, tableaus[toIdx - 1].tail->val)) {
                                 cout << "Invalid Move." << endl;
                                 continue;
                             }
@@ -248,9 +306,17 @@ public:
                         }
                         // From Tableau to Foundation
                         else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
-                            if (tableaus[fromIdx - 1].size() >= 1 && isValidMove(tableaus[fromIdx - 1].getHead()->val, foundations[toIdx - 1].top())) {
-                                moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
-                            } 
+                            Card c = tableaus[fromIdx - 1].tail->val;
+                            if (tableaus[fromIdx - 1].size() >= 1) {
+                                if (foundations[toIdx - 1].empty()) {
+                                    if (c.rank == 1) {
+                                        moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
+                                    }
+                                }
+                                else if (isValidMove(foundations[toIdx - 1].top(), c)) {
+                                    moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
+                                }
+                            }
                         }
                         else {
                             cout << "Invalid destination!" << endl;
@@ -259,13 +325,17 @@ public:
                     else if (from == 2) {
                         // From WastePile to Tableau
                         if (to == 1 && toIdx >= 1 && toIdx <= 7) {
-                            if(!wastePile.empty() && isValidMove(wastePile.peek(), tableaus[toIdx - 1].getHead()->val))
+                            if (!wastePile.empty())
                                 moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
+                            else
+                                cout << "Waste Pile is empty.";
                         }
                         // From WastePile to Foundation
                         else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
-                            if (!wastePile.empty() && ((wastePile.peek().rank == 1 && foundations[toIdx - 1].empty()) || isValidMove(wastePile.peek(), foundations[toIdx - 1].top())))
+                            if (!wastePile.empty())
                                 moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
+                            else
+                                cout << "Waste Pile is empty.";
                         }
                         else {
                             cout << "Invalid destination!" << endl;
@@ -289,7 +359,7 @@ public:
                 break;
             }
 
-            _getch();
+            char ch = _getch();
 
         }
     }

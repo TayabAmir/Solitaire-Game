@@ -6,11 +6,9 @@ using namespace std;
 template <typename T>
 class LinkedList
 {
-private:
+public:
     Node<T>* head;
     Node<T>* tail;
-
-public:
     LinkedList()
     {
         head = NULL;
@@ -32,7 +30,7 @@ public:
                 temp = temp->next;
                 current = current->next;
             }
-            tail = temp;  // Set the tail to the last node
+            tail = temp;
         }
     }
 
@@ -41,21 +39,13 @@ public:
         return head == NULL;
     }
 
-    Node<T>* getHead() {
-        return head;
-    }
-
-    Node<T>* getTail() {
-        return tail;
-    }
-
     void insertAtHead(T val)
     {
         Node<T>* node = new Node<T>(val);
         node->next = head;
         head = node;
         if (tail == NULL) {
-            tail = head;  // Update tail if the list was empty
+            tail = head;
         }
     }
 

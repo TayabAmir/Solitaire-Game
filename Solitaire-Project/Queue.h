@@ -26,11 +26,7 @@ public:
     }
     int size()
     {
-        Node<T>* head = list.getHead();
-        int s = 0;
-        while (head)
-            head = head->next, s++;
-        return s;
+        return list.size();
     }
     void dequeue()
     {
@@ -46,7 +42,7 @@ public:
     T& peek()
     {
         if (!list.isEmpty())
-            return list.getHead()->val;
+            return list.head->val;
         cout << "Segmentation Fault!!";
         exit(1);
     }
