@@ -3,6 +3,7 @@
 #include<string>
 #include<windows.h>
 #include<unordered_map>
+#include "ConsoleUtility.h"
 using namespace std;
 
 
@@ -14,6 +15,7 @@ class Card
 	unordered_map<int, string> mapRanks = {
 	{1, "A"}, {11, "Jack"}, {12, "Queen"}, {13, "King"}
 	};
+
 
 public:
 	string suit;
@@ -29,13 +31,11 @@ public:
 
 	void display() const {
 		string mappedRank = (mapRanks.find(rank) != mapRanks.end()) ? mapRanks.at(rank) : to_string(rank);
-				//HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-			if (suit == "Hearts" || suit == "Diamonds")
-		{
-			//SetConsoleTextAttribute(hConsole, 4);
+		if (suit == "Hearts" || suit == "Diamonds") {
+				ConsoleUtility::setConsoleColors(4, 15);
 		}
 		cout << mappedRank << "[" << suit << "]";
-		//SetConsoleTextAttribute(hConsole, 1);
+		ConsoleUtility::setConsoleColors(0, 15);
 
 	}
 };

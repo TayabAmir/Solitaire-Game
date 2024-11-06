@@ -43,7 +43,6 @@ public:
     {
         if (!list.isEmpty())
             return list.head->val;
-        cout << "Segmentation Fault!!";
-        exit(1);
+        throw runtime_error("Queue is empty.");
     }
 };
