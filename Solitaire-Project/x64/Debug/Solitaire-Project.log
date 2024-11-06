@@ -1,4 +1,4 @@
 ﻿  main.cpp
-D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(264,13): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
-D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(265,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(263,13): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(264,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   Solitaire-Project.vcxproj -> D:\DSA-Lab\Solitaire-Project\x64\Debug\Solitaire-Project.exe

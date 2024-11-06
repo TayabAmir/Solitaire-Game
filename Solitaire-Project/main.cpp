@@ -39,7 +39,6 @@ private:
 		ConsoleUtility::setConsoleColors(0, 15);
 		ConsoleUtility::setConsoleColors(1, 15);
 		if (stockPile.empty()) {
-			drawCard();
 			cout << stockPile.size() << " cards";
 		}
 		else {
@@ -401,6 +400,7 @@ public:
 				else {
 					cout << "Invalid source!" << endl;
 				}
+				char ch = _getch();
 			}
 			else if (cmd == "draw") {
 				drawCard();
@@ -410,13 +410,13 @@ public:
 			}
 			else {
 				cout << "Invalid command!" << endl;
+				char ch = _getch();
 			}
 			if (win()) {
-				cout << "Congratulations! You've won the game!" << endl;
+				cout << endl << "Congratulations! You've won the game!" << endl;
 				break;
+				char ch = _getch();
 			}
-
-			char ch = _getch();
 
 		}
 	}
