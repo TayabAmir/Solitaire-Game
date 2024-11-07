@@ -8,10 +8,11 @@
 #include<unordered_map> 
 #include "Stack.h"
 #include "Queue.h"
-#include "Card.cpp" 
-#include "LinkedList.cpp" 
-#include "Node.cpp" 
+#include "Card.h" 
+#include "LinkedList.h" 
+#include "Node.h" 
 #include "ConsoleUtility.h"
+#include "Move.h"
 
 using namespace std;
 
@@ -20,6 +21,7 @@ private:
 	LinkedList<Card> tableaus[7];
 	Stack<Card> foundations[4];
 	Queue<Card> stockPile, wastePile;
+	Stack<Move> undoStack;
 
 	void gotoxy(int x, int y) {
 		COORD coord;
@@ -30,7 +32,6 @@ private:
 
 	void displayGame() {
 		system("cls");
-
 
 		// StockPile and WastePile at top left
 		gotoxy(2, 1);
@@ -58,11 +59,11 @@ private:
 			ConsoleUtility::setConsoleColors(0, 15);
 		}
 		else {
-			Queue<Card> temp = wastePile;
+			Queue<Card> temp = wastePile; 
 			while (temp.size() > 1) {
 				temp.dequeue();
 			}
-			temp.peek().display();
+			temp.peek().display(); // Showing the last card in queue
 		}
 
 		// Foundations at top right
@@ -125,7 +126,7 @@ private:
 	}
 	
 	bool isValidMoveForF(Card& c, Card& topCard) {
-		return c.rank - 1 == topCard.rank && c.suit == topCard.suit;
+		return c.rank - 1 == topCard.rank && c.suit == topCard.suit; // For card to be moved in foundation it should have same suit as the card in the foundation and 1 rank higher
 	}
 
 	void drawCard() {
@@ -155,10 +156,12 @@ private:
 		}
 		return true;
 	}
+
 	void moveCardBetweenTableaus(LinkedList<Card>& from, LinkedList<Card>& to, int noOfCards) {
 		Node<Card>* head = from.head;
 		int s = from.size();
-		if (s == noOfCards) {
+		if (s == noOfCards) { 
+// If the size of linked list from where we are transferring cards = no of cards we have to transfer, we simply connect the tail pointer of source list to the head of destination list
 			if (to.tail) { 
 				to.tail->next = head;
 			}
@@ -169,6 +172,7 @@ private:
 			from.head = from.tail = NULL;
 		}
 		else {
+// Else changing the pointers accordingly
 			for (int i = 0; i < s - noOfCards - 1; i++) {
 				head = head->next;
 			}
@@ -183,7 +187,6 @@ private:
 			from.tail = head;
 			from.tail->val.isFaceUp = true;
 		}
-
 	}
 
 	void moveCardFromWtoF(Queue<Card>& w, Stack<Card>& f) {
@@ -215,6 +218,7 @@ private:
 		if (t.tail)
 			t.tail->val.isFaceUp = true;
 	}
+
 	void moveCardFromWtoT(Queue<Card>& w, LinkedList<Card>& t) {
 
 		Queue<Card> temp;
@@ -222,6 +226,7 @@ private:
 			temp.enqueue(w.peek());
 			w.dequeue();
 		}
+		bool valid = true;
 		Card c = w.peek();
 		w.dequeue();
 		if ((t.isEmpty() && c.rank == 13) || (!t.isEmpty() && isValidMove(c, t.tail->val))) {
@@ -230,11 +235,14 @@ private:
 		}
 		else {
 			cout << "Invalid Move";
+			valid = false;
 		}
 		while (!temp.empty()) {
 			w.enqueue(temp.peek());
 			temp.dequeue();
 		}
+		if(!valid)
+			w.enqueue(c);
 	}
 	int noofFaceupCards(LinkedList<Card>& ll) {
 		Node<Card>* temp = ll.head;
@@ -282,6 +290,121 @@ public:
 			stockPile.enqueue(cards[cardIdx++]);
 		}
 	}
+	void moveCards(int from, int fromIdx, int to, int toIdx, int &noOfCards, bool &lastCardFace) {
+		if (from == 1 && fromIdx >= 1 && fromIdx <= 7) {
+			// From Tableau to Tableau
+			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
+				cout << "Enter Number of Cards you want to move: ";
+				cin >> noOfCards;
+
+				if (tableaus[fromIdx - 1].size() < noOfCards) {
+					cout << "There are not enough cards in Tableau " << fromIdx << "." << endl;
+					return;
+				}
+				if (noOfCards > noofFaceupCards(tableaus[fromIdx - 1])) {
+					cout << "Not enough face up cards." << endl;
+					return;
+				}
+
+				Node<Card>* head = tableaus[fromIdx - 1].head;
+
+				if (tableaus[fromIdx - 1].size() != noOfCards) {
+					for (int i = 0; i < tableaus[fromIdx - 1].size() - noOfCards - 1; i++) {
+						head = head->next;
+					}
+				}
+
+				Node<Card>* x = head;
+				lastCardFace = head->val.isFaceUp;
+				if (tableaus[fromIdx - 1].size() != noOfCards) {
+					x = x->next;
+				}
+				// If Tableau is empty and the card to be move from is king
+				if (tableaus[toIdx - 1].isEmpty() && x->val.rank == 13) {
+					Node<Card>* temp = head->next;
+					while (temp) {
+						tableaus[toIdx - 1].insertAtEnd(temp->val);
+						temp = temp->next;
+					}
+					head->next = NULL;
+					tableaus[fromIdx - 1].tail = head;
+					tableaus[fromIdx - 1].tail->val.isFaceUp = true;
+					return;
+				}
+				else if (tableaus[toIdx - 1].isEmpty() && x->val.rank != 13) {
+					return;
+				}
+
+
+				if (!isValidMove(x->val, tableaus[toIdx - 1].tail->val)) {
+					cout << "Invalid Move." << endl;
+					return;
+				}
+
+				moveCardBetweenTableaus(tableaus[fromIdx - 1], tableaus[toIdx - 1], noOfCards);
+			}
+			// From Tableau to Foundation
+			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
+				Card c = tableaus[fromIdx - 1].tail->val;
+				if (tableaus[fromIdx - 1].size() >= 1) {
+					if (foundations[toIdx - 1].empty()) {
+						if (c.rank == 1) {
+							moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
+						}
+						else {
+							cout << "Only an ace card can be moved to empty foundation.";
+						}
+					}
+					else if (isValidMoveForF(c, foundations[toIdx - 1].top())) {
+						moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
+					}
+					else {
+						cout << "Cannot move this card to foundation";
+					}
+				}
+			}
+			else {
+				cout << "Invalid destination!" << endl;
+			}
+		}
+		else if (from == 2) {
+			// From WastePile to Tableau
+			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
+				if (!wastePile.empty())
+					moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
+				else
+					cout << "Waste Pile is empty.";
+			}
+			// From WastePile to Foundation
+			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
+				if (!wastePile.empty())
+					moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
+				else
+					cout << "Waste Pile is empty.";
+			}
+			else {
+				cout << "Invalid destination!" << endl;
+			}
+		}
+		else {
+			cout << "Invalid source!" << endl;
+		}
+	}
+
+	void moveFromWToS() {
+		Queue<Card> temp;
+		while (wastePile.size() > 1) {
+			temp.enqueue(wastePile.peek());
+			wastePile.dequeue();
+		}
+		Card c = wastePile.peek();
+		wastePile.dequeue();
+		while (!temp.empty()) {
+			wastePile.enqueue(temp.peek());
+			temp.dequeue();
+		}
+		stockPile.enqueue(c);
+	}
 
 	void play() {
 		string cmd;
@@ -293,8 +416,9 @@ public:
 			cout << "Enter command (move, draw, quit): ";
 			cin >> cmd;
 
+			int from = -1, fromIdx = -1, to = -1, toIdx = -1, noOfCards = -1;
+			bool lastCardFace = false;
 			if (cmd == "move") {
-				int from, fromIdx, to, toIdx = -1;
 				cout << "Enter source (1 for Tableau, 2 for Waste Pile): ";
 				cin >> from;
 				if (from == 1) {
@@ -306,104 +430,64 @@ public:
 				cout << "Enter the Number: ";
 				cin >> toIdx;
 
-				if (from == 1 && fromIdx >= 1 && fromIdx <= 7) {
-					// From Tableau to Tableau
-					if (to == 1 && toIdx >= 1 && toIdx <= 7) {
-						int noOfCards;
-						cout << "Enter Number of Cards you want to move: ";
-						cin >> noOfCards;
-
-						if (tableaus[fromIdx - 1].size() < noOfCards) {
-							cout << "There are not enough cards in Tableau " << fromIdx << "." << endl;
-							continue;
-						}
-						if (noOfCards > noofFaceupCards(tableaus[fromIdx - 1])) {
-							cout << "Not enough face up cards." << endl;
-							continue;
-						}
-
-						Node<Card>* head = tableaus[fromIdx - 1].head;
-
-						if (tableaus[fromIdx - 1].size() != noOfCards) {
-							for (int i = 0; i < tableaus[fromIdx - 1].size() - noOfCards - 1; i++) {
-								head = head->next;
-							}
-						}
-
-						Node<Card>* x = head;
-						if (tableaus[fromIdx - 1].size() != noOfCards) {
-							x = x->next;
-						}
-						// If Tableau is empty and the card to be move from is king
-						if (tableaus[toIdx - 1].isEmpty() && x->val.rank == 13) {
-							Node<Card>* temp = head->next;
-							while (temp) {
-								tableaus[toIdx - 1].insertAtEnd(temp->val);
-								temp = temp->next;
-							}
-							head->next = NULL;
-							tableaus[fromIdx - 1].tail = head;
-							tableaus[fromIdx - 1].tail->val.isFaceUp = true;
-							continue;
-						}
-
-						if (!isValidMove(x->val, tableaus[toIdx - 1].tail->val)) {
-							cout << "Invalid Move." << endl;
-							continue;
-						}
-
-						moveCardBetweenTableaus(tableaus[fromIdx - 1], tableaus[toIdx - 1], noOfCards);
-					}
-					// From Tableau to Foundation
-					else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
-						Card c = tableaus[fromIdx - 1].tail->val;
-						if (tableaus[fromIdx - 1].size() >= 1) {
-							if (foundations[toIdx - 1].empty()) {
-								if (c.rank == 1) {
-									moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
-								}
-								else {
-									cout << "Only an ace card can be moved to empty foundation.";
-								}
-							}
-							else if (isValidMoveForF(c, foundations[toIdx - 1].top())) {
-								moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
-							}
-							else {
-								cout << "Cannot move this card to foundation";
-							}
-						}
-					}
-					else {
-						cout << "Invalid destination!" << endl;
-					}
-				}
-				else if (from == 2) {
-					// From WastePile to Tableau
-					if (to == 1 && toIdx >= 1 && toIdx <= 7) {
-						if (!wastePile.empty())
-							moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
-						else
-							cout << "Waste Pile is empty.";
-					}
-					// From WastePile to Foundation
-					else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
-						if (!wastePile.empty())
-							moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
-						else
-							cout << "Waste Pile is empty.";
-					}
-					else {
-						cout << "Invalid destination!" << endl;
-					}
-				}
-				else {
-					cout << "Invalid source!" << endl;
-				}
+				moveCards(from, fromIdx, to, toIdx, noOfCards, lastCardFace);
 				char ch = _getch();
-			}
+			} 
 			else if (cmd == "draw") {
 				drawCard();
+			}
+			else if (cmd == "undo") {
+
+				if (undoStack.empty()) {
+					cout << "No move to undo :)";
+				}
+				else {
+					Move m = undoStack.top();
+					undoStack.pop();
+
+					if (m.cmd == "draw") {
+						moveFromWToS();
+					}
+					else {
+						if (m.from == 2 && m.fromIdx == -1) {
+							if (m.to == 1) {
+								Card c = tableaus[m.toIdx - 1].tail->val;
+								tableaus[m.toIdx - 1].deleteFromEnd();
+								wastePile.enqueue(c);
+							}
+							else {
+								Card c = foundations[m.toIdx - 1].top();
+								foundations[m.toIdx - 1].pop();
+								wastePile.enqueue(c);
+							}
+						}
+						if (m.from == 1) {
+							if (m.to == 1) {
+								int cards = m.noOfCards;
+								Stack<Card> temp;
+								while (cards--) {
+									temp.push(tableaus[m.toIdx - 1].tail->val);
+									tableaus[m.toIdx - 1].deleteFromEnd();
+								}
+								tableaus[m.fromIdx - 1].tail->val.isFaceUp = m.face;
+								while (!temp.empty()) {
+									Card c = temp.top(); temp.pop();
+									tableaus[m.fromIdx - 1].insertAtEnd(c);
+								}
+							}
+							else {
+								Card c = foundations[m.toIdx - 1].top();
+								foundations[m.toIdx - 1].pop();
+								tableaus[m.fromIdx - 1].tail->val.isFaceUp = false;
+								tableaus[m.fromIdx - 1].insertAtEnd(c);
+							}
+						}
+					}
+				}
+			}
+			else if (cmd == "redo") {
+				Move move = undoStack.top();
+				undoStack.pop();
 			}
 			else if (cmd == "quit") {
 				break;
@@ -413,11 +497,19 @@ public:
 				char ch = _getch();
 			}
 			if (win()) {
+				displayGame();
 				cout << endl << "Congratulations! You've won the game!" << endl;
 				break;
 				char ch = _getch();
 			}
-
+			if (cmd == "move") {
+				Move m(cmd, from, fromIdx, to, toIdx, noOfCards, lastCardFace);
+				undoStack.push(m);
+			}
+			else if(cmd == "draw") {
+				Move m(cmd);
+				undoStack.push(m);
+			}
 		}
 	}
 };
