@@ -5,7 +5,10 @@
 #include <algorithm>
 #include<conio.h> 
 #include<windows.h> 
-#include<unordered_map> 
+#include<unordered_map>
+#include <chrono>
+#include <thread>
+#include <atomic>
 #include "Stack.h"
 #include "Queue.h"
 #include "Card.h" 
@@ -13,8 +16,37 @@
 #include "Node.h" 
 #include "ConsoleUtility.h"
 #include "Move.h"
-
 using namespace std;
+
+atomic<bool> keepRunning(true);
+
+void gotoxy(int x, int y) {
+	COORD coord;
+	coord.X = x;
+	coord.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+}
+
+void startTimer() {
+	auto start = std::chrono::steady_clock::now();
+	while (keepRunning) {
+		auto now = chrono::steady_clock::now();
+		auto elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
+
+		CONSOLE_SCREEN_BUFFER_INFO csbi;
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		GetConsoleScreenBufferInfo(hConsole, &csbi);
+		COORD originalCursorPosition = csbi.dwCursorPosition;
+
+		gotoxy(85, 25);
+		cout << "Time elapsed: " << elapsed << " seconds    " << flush;
+
+		SetConsoleCursorPosition(hConsole, originalCursorPosition);
+
+		this_thread::sleep_for(chrono::seconds(1));
+	}
+}
+
 
 class SolitaireGame {
 private:
@@ -22,18 +54,11 @@ private:
 	Stack<Card> foundations[4];
 	Queue<Card> stockPile, wastePile;
 	Stack<Move> undoStack, redoStack;
-
-	void gotoxy(int x, int y) {
-		COORD coord;
-		coord.X = x;
-		coord.Y = y;
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-	}
+	int moves;
 
 	void displayGame() {
 		system("cls");
 
-		// StockPile and WastePile at top left
 		gotoxy(2, 1);
 		ConsoleUtility::setConsoleColors(2, 15);
 		cout << "Stock Pile: ";
@@ -48,7 +73,6 @@ private:
 		ConsoleUtility::setConsoleColors(0, 15);
 
 
-		// Position of WastePile below StockPile
 		gotoxy(2, 3);
 		ConsoleUtility::setConsoleColors(2, 15);
 		cout << "Waste Pile: ";
@@ -63,10 +87,9 @@ private:
 			while (temp.size() > 1) {
 				temp.dequeue();
 			}
-			temp.peek().display(); // Showing the last card in queue
+			temp.peek().display();
 		}
 
-		// Foundations at top right
 		gotoxy(70, 1);
 		ConsoleUtility::setConsoleColors(2, 15);
 		cout << "Foundations";
@@ -93,10 +116,16 @@ private:
 			ConsoleUtility::setConsoleColors(0, 15);
 			printTableau(tableaus[i].head, x + i * 15, y + 2);
 		}
+		gotoxy(85, 26);
+		cout << "Moves: " << moves;
 	}
 
 	void printTableau(Node<Card>* temp, int x, int y) {
 		Node<Card>* c = temp;
+		if (!c) {
+			gotoxy(x, y);
+			cout << "[Empty]";
+		}
 		while (c)
 		{
 			gotoxy(x, y);
@@ -116,7 +145,6 @@ private:
 	}
 
 	bool isValidMove(Card& c, Card& topCard) {
-		// Conditions for valid move i.e different colors and one lower rank
 		if ((c.rank == topCard.rank - 1) &&
 			(((c.suit == "Hearts" || c.suit == "Diamonds") && (topCard.suit == "Clubs" || topCard.suit == "Spades"))
 				||
@@ -126,11 +154,10 @@ private:
 	}
 
 	bool isValidMoveForF(Card& c, Card& topCard) {
-		return c.rank - 1 == topCard.rank && c.suit == topCard.suit; // For card to be moved in foundation it should have same suit as the card in the foundation and 1 rank higher
+		return c.rank - 1 == topCard.rank && c.suit == topCard.suit;
 	}
 
 	void drawCard() {
-		// If stock pile is empty, put all cards from wastepile to stockpile
 		if (stockPile.empty()) {
 			while (!wastePile.empty()) {
 				Card card = wastePile.peek();
@@ -139,7 +166,6 @@ private:
 				wastePile.dequeue();
 			}
 		}
-		// If stockpile not empty take card from it
 		else {
 			wastePile.enqueue(stockPile.peek());
 			stockPile.dequeue();
@@ -147,7 +173,6 @@ private:
 		}
 	}
 
-	// winning condition is if all the foundations have 13 cards
 	bool win() {
 		for (int i = 0; i < 4; i++) {
 			if (foundations[i].size() != 13) {
@@ -161,7 +186,6 @@ private:
 		Node<Card>* head = from.head;
 		int s = from.size();
 		if (s == noOfCards) {
-			// If the size of linked list from where we are transferring cards = no of cards we have to transfer, we simply connect the tail pointer of source list to the head of destination list
 			if (to.tail) {
 				to.tail->next = head;
 			}
@@ -172,7 +196,6 @@ private:
 			from.head = from.tail = NULL;
 		}
 		else {
-			// Else changing the pointers accordingly
 			for (int i = 0; i < s - noOfCards - 1; i++) {
 				head = head->next;
 			}
@@ -257,24 +280,19 @@ private:
 	}
 
 public:
-	SolitaireGame() {
-		// Making deck of 52 Cards
-
+	SolitaireGame(int shuffle) {
 		vector<Card> cards;
 		for (int i = 1; i <= 4; i++) {
 			for (int j = 1; j <= 13; j++) {
 				cards.push_back(Card(i, j));
 			}
 		}
-
-		// Shuffling the made cards using Fisher-Yates shuffling algo
 		srand(time(0));
 		for (int lastIndex = cards.size() - 1; lastIndex > 0; lastIndex--) {
 			int j = (int)rand() % lastIndex;
 			swap(cards[lastIndex], cards[j]);
 		}
 
-		// Filling Tableaus with Cards
 		int cardIdx = 0;
 		for (int tableauIdx = 0; tableauIdx < 7; tableauIdx++) {
 			for (int card = 1; card <= tableauIdx + 1; card++) {
@@ -285,14 +303,13 @@ public:
 			}
 		}
 
-		// Filling StockPile with Cards
 		while (cardIdx < cards.size()) {
 			stockPile.enqueue(cards[cardIdx++]);
 		}
+		moves = 0;
 	}
 	void moveCards(int from, int fromIdx, int to, int toIdx, int& noOfCards, bool& lastCardFace) {
 		if (from == 1 && fromIdx >= 1 && fromIdx <= 7) {
-			// From Tableau to Tableau
 			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
 				if (noOfCards == -1) {
 					cout << "Enter Number of Cards you want to move: ";
@@ -321,7 +338,7 @@ public:
 				if (tableaus[fromIdx - 1].size() != noOfCards) {
 					x = x->next;
 				}
-				// If Tableau is empty and the card to be move from is king
+
 				if (tableaus[toIdx - 1].isEmpty() && x->val.rank == 13) {
 					Node<Card>* temp = head->next;
 					while (temp) {
@@ -346,7 +363,6 @@ public:
 
 				moveCardBetweenTableaus(tableaus[fromIdx - 1], tableaus[toIdx - 1], noOfCards);
 			}
-			// From Tableau to Foundation
 			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
 				Card c = tableaus[fromIdx - 1].tail->val;
 				if (tableaus[fromIdx - 1].size() >= 1) {
@@ -371,14 +387,12 @@ public:
 			}
 		}
 		else if (from == 2) {
-			// From WastePile to Tableau
 			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
 				if (!wastePile.empty())
 					moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
 				else
 					cout << "Waste Pile is empty.";
 			}
-			// From WastePile to Foundation
 			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
 				if (!wastePile.empty())
 					moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
@@ -432,12 +446,13 @@ public:
 				cin >> to;
 				cout << "Enter the Number: ";
 				cin >> toIdx;
-
 				moveCards(from, fromIdx, to, toIdx, noOfCards, lastCardFace);
 				char ch = _getch();
+				moves++;
 			}
 			else if (cmd == "draw") {
 				drawCard();
+				moves++;
 			}
 			else if (cmd == "undo") {
 
@@ -445,6 +460,7 @@ public:
 					cout << "No move to undo :)";
 				}
 				else {
+					moves++;
 					Move m = undoStack.top();
 					undoStack.pop();
 					redoStack.push(m);
@@ -495,6 +511,7 @@ public:
 					cout << "No Move to Redo :(";
 				}
 				else {
+					moves++;
 					Move m = redoStack.top();
 					undoStack.push(m);
 					redoStack.pop();
@@ -531,10 +548,110 @@ public:
 	}
 };
 
+void displayInstructions() {
+	system("cls");
+	gotoxy(10, 2);
+	cout << "===============================" << endl;
+	cout << "           Instructions         " << endl;
+	cout << "===============================" << endl;
+	cout << endl;
+	gotoxy(10, 7);
+	std::cout << "1. The goal is to move all cards to the foundation piles.";
+	gotoxy(10, 9);
+	std::cout << "2. Build up each foundation by suit, from Ace to King.";
+	gotoxy(10, 11);	
+	std::cout << "3. You can move cards between tableau piles, building down by alternating colors.";
+	gotoxy(10, 13);
+	std::cout << "4. Use the stock pile to draw more cards if you get stuck.";
+	gotoxy(10, 15);
+	std::cout << "5. To win, all cards must be in the foundation piles.";
+
+	gotoxy(10, 18);
+	std::cout << "Press any key to return to the main menu.";
+	_getch();
+}
+
+void displayHeader() {
+	ConsoleUtility::setConsoleColors(14, 0);
+	gotoxy(20, 5);
+	cout << "  SSSSS   OOOOO  L        III  TTTTT  AAAAA  RRRRR   EEEEE" << endl;
+	gotoxy(20, 6);
+	cout << " S        O   O  L         I     T   A     A R    R  E" << endl;
+	gotoxy(20, 7);
+	cout << "  SSS     O   O  L         I     T   AAAAAAA RRRRR   EEEE" << endl;
+	gotoxy(20, 8);
+	cout << "     S    O   O  L         I     T   A     A R  R    E" << endl;
+	gotoxy(20, 9);
+	cout << "  SSSSS   OOOOO  LLLLL    III    T   A     A R   RR  EEEEE" << endl;
+	ConsoleUtility::setConsoleColors(15, 0);
+}
+
+void displayFrontPage() {
+	system("cls"); 
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15); 
+
+	cout << "===============================" << endl;
+	cout << "        Welcome to Solitaire!    " << endl;
+	cout << "===============================" << endl;
+	cout << endl;
+
+	cout << "1. Start Game" << endl;
+	cout << "2. Instructions" << endl;
+	cout << "3. Quit" << endl;
+
+	cout << endl;
+	cout << "Please select an option (1-3): ";
+}
+
+void displayShuffleOptions() {
+	system("cls");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+
+	cout << "===============================" << endl;
+	cout << "    Select Shuffle Difficulty   " << endl;
+	cout << "===============================" << endl;
+	cout << endl;
+
+	cout << "1. Easy Shuffle" << endl;
+	cout << "2. Medium Shuffle" << endl;
+	cout << "3. Hard Shuffle" << endl;
+
+	cout << endl;
+	cout << "Please select a shuffle difficulty (1-3): ";
+}
+
 
 int main() {
 
-	SolitaireGame game;
-	game.play();
+	while (true) {
+		displayFrontPage();
+
+		char choice = _getch();
+
+		if (choice == '1') {
+			displayShuffleOptions();
+			char c = _getch();
+			int shfl = c - '0';
+
+			thread timerThread(startTimer);
+			SolitaireGame game(1);
+			game.play();
+			keepRunning = false;
+			timerThread.join();
+		}
+		else if (choice == '2') {
+			displayInstructions();
+		}
+		else if (choice == '3') {
+			system("cls");
+			cout << "Quitting game. Goodbye!" << std::endl;
+			break;
+		}
+		else {
+			gotoxy(24, 25);
+			cout << "Invalid option. Please try again.";
+			Sleep(1000);
+		}
+	}
 	return 0;
 }
