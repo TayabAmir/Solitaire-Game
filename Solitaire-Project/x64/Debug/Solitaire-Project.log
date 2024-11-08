@@ -1,4 +1,5 @@
 ﻿  main.cpp
-D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(290,13): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
-D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(291,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(326,14): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(327,23): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+D:\DSA-Lab\Solitaire-Project\Solitaire-Project\main.cpp(465): warning C4715: 'SolitaireGame::moveCards': not all control paths return a value
   Solitaire-Project.vcxproj -> D:\DSA-Lab\Solitaire-Project\x64\Debug\Solitaire-Project.exe

@@ -39,7 +39,7 @@ void startTimer() {
 		COORD originalCursorPosition = csbi.dwCursorPosition;
 
 		gotoxy(85, 25);
-		cout << "Time elapsed: " << elapsed << " seconds    " << flush;
+		cout << "Time passed: " << elapsed << " seconds    " << flush;
 
 		SetConsoleCursorPosition(hConsole, originalCursorPosition);
 
@@ -65,7 +65,7 @@ private:
 		ConsoleUtility::setConsoleColors(0, 15);
 		ConsoleUtility::setConsoleColors(1, 15);
 		if (stockPile.empty()) {
-			cout << stockPile.size() << " cards";
+			cout << "Empty";
 		}
 		else {
 			cout << stockPile.size() << " Cards";
@@ -118,6 +118,10 @@ private:
 		}
 		gotoxy(85, 26);
 		cout << "Moves: " << moves;
+
+		gotoxy(85, 27);
+		cout << undoStack.size();
+
 	}
 
 	void printTableau(Node<Card>* temp, int x, int y) {
@@ -212,12 +216,13 @@ private:
 		}
 	}
 
-	void moveCardFromWtoF(Queue<Card>& w, Stack<Card>& f) {
+	bool moveCardFromWtoF(Queue<Card>& w, Stack<Card>& f) {
 		Queue<Card> temp;
 		while (w.size() > 1) {
 			temp.enqueue(w.peek());
 			w.dequeue();
 		}
+		bool t = true;
 		Card c = w.peek();
 		w.dequeue();
 		if ((c.rank == 1 && f.empty()) || (!f.empty() && isValidMoveForF(c, f.top()))) {
@@ -226,12 +231,14 @@ private:
 		}
 		else {
 			cout << "Invalid Move" << endl;
-			w.enqueue(c);
+			t = false;
 		}
 		while (!temp.empty()) {
 			w.enqueue(temp.peek());
 			temp.dequeue();
 		}
+		w.enqueue(c);
+		return t;
 	}
 
 	void moveCarFromTtoF(LinkedList<Card>& t, Stack<Card>& f) {
@@ -242,8 +249,7 @@ private:
 			t.tail->val.isFaceUp = true;
 	}
 
-	void moveCardFromWtoT(Queue<Card>& w, LinkedList<Card>& t) {
-
+	bool moveCardFromWtoT(Queue<Card>& w, LinkedList<Card>& t) {
 		Queue<Card> temp;
 		while (w.size() > 1) {
 			temp.enqueue(w.peek());
@@ -266,6 +272,7 @@ private:
 		}
 		if (!valid)
 			w.enqueue(c);
+		return valid;
 	}
 	int noofFaceupCards(LinkedList<Card>& ll) {
 		Node<Card>* temp = ll.head;
@@ -282,15 +289,53 @@ private:
 public:
 	SolitaireGame(int shuffle) {
 		vector<Card> cards;
-		for (int i = 1; i <= 4; i++) {
-			for (int j = 1; j <= 13; j++) {
-				cards.push_back(Card(i, j));
+
+		if (shuffle == 0) {
+			cards = {
+				Card(1, 1),
+				Card(1, 2),Card(3, 1),
+				Card(3, 13), Card(1, 3), Card(3, 2),
+				Card(1, 4), Card(3, 3), Card(1, 5), Card(2, 1),
+				Card(1, 6), Card(3, 4), Card(1, 7), Card(3, 5), Card(1, 8),
+				Card(1, 9), Card(3, 6), Card(1, 10), Card(3, 7), Card(1, 11), Card(3, 8),
+				Card(1, 12), Card(3, 9), Card(1, 13), Card(3, 10), Card(2, 12), Card(3, 11), Card(3, 12),
+				Card(4, 1), Card(2, 2), Card(2, 3), Card(2, 4), Card(2, 5), Card(2, 6), Card(2, 7), Card(2, 8), Card(2, 9), Card(2, 10),
+				Card(2, 11), Card(2, 13), Card(4, 2), Card(4, 3), Card(4, 4), Card(4, 5), Card(4, 6), Card(4, 7), Card(4, 8), Card(4, 9),
+				Card(4, 10), Card(4, 11), Card(4, 12), Card(4, 13)
+			};
+
+		}
+		else if (shuffle == 1) {
+			cards = {
+				Card(1, 1), Card(3, 1), Card(1, 2), Card(4, 1), Card(1, 3), Card(3, 2), Card(2, 1), Card(1, 4), Card(3, 3), Card(1, 5),
+				Card(1, 6), Card(3, 4), Card(1, 7), Card(3, 5), Card(1, 8), Card(1, 9), Card(3, 6), Card(1, 10), Card(3, 7), Card(1, 11),
+				Card(3, 8), Card(1, 12), Card(3, 9), Card(1, 13), Card(3, 10), Card(2, 12), Card(3, 11), Card(3, 12), Card(3,13), Card(2, 2),
+				Card(2, 3), Card(2, 4), Card(2, 5), Card(2, 6), Card(2, 7), Card(2, 8), Card(2, 9), Card(2, 10), Card(2, 11), Card(2, 13),
+				Card(4, 2), Card(4, 3), Card(4, 4), Card(4, 5), Card(4, 6), Card(4, 7), Card(4, 8), Card(4, 9), Card(4, 10), Card(4, 11),
+				Card(4, 12), Card(4, 13)
+			};
+		}
+		else if (shuffle == 2) {
+			for (int i = 1; i <= 4; i++) {
+				for (int j = 1; j <= 13; j++) {
+					cards.push_back(Card(i, j));
+				}
+			}
+			srand(time(0));
+			for (int lastIndex = cards.size() - 1; lastIndex > 0; lastIndex--) {
+				int j = (int)rand() % lastIndex;
+				swap(cards[lastIndex], cards[j]);
 			}
 		}
-		srand(time(0));
-		for (int lastIndex = cards.size() - 1; lastIndex > 0; lastIndex--) {
-			int j = (int)rand() % lastIndex;
-			swap(cards[lastIndex], cards[j]);
+		else if (shuffle == 3) {
+			cards = {
+				Card(1, 5), Card(1, 6), Card(3, 4), Card(3, 5), Card(1, 12), Card(3, 9), Card(3, 1), Card(1, 7), Card(1, 11), Card(3, 3),
+				Card(1, 1), Card(3, 8), Card(1, 8), Card(3, 13), Card(1, 4), Card(4, 1), Card(2, 12), Card(3, 6), Card(3, 7), Card(1, 9),
+				Card(3, 11), Card(2, 1), Card(3, 2), Card(3, 12), Card(1, 13), Card(1, 10), Card(3, 10), Card(4, 4), Card(2, 2), Card(2, 3),
+				Card(2, 4), Card(2, 5), Card(2, 6), Card(2, 7), Card(2, 8), Card(2, 9), Card(2, 10), Card(2, 11), Card(2, 13), Card(4, 2),
+				Card(4, 3), Card(4, 5), Card(4, 6), Card(4, 7), Card(4, 8), Card(4, 9), Card(4, 10), Card(4, 11), Card(4, 12), Card(4, 13),
+				Card(1, 2), Card(1, 3)
+			};
 		}
 
 		int cardIdx = 0;
@@ -308,7 +353,8 @@ public:
 		}
 		moves = 0;
 	}
-	void moveCards(int from, int fromIdx, int to, int toIdx, int& noOfCards, bool& lastCardFace) {
+
+	bool moveCards(int from, int fromIdx, int to, int toIdx, int& noOfCards, bool& lastCardFace) {
 		if (from == 1 && fromIdx >= 1 && fromIdx <= 7) {
 			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
 				if (noOfCards == -1) {
@@ -317,11 +363,11 @@ public:
 
 					if (tableaus[fromIdx - 1].size() < noOfCards) {
 						cout << "There are not enough cards in Tableau " << fromIdx << "." << endl;
-						return;
+						return false;
 					}
 					if (noOfCards > noofFaceupCards(tableaus[fromIdx - 1])) {
 						cout << "Not enough face up cards." << endl;
-						return;
+						return false;
 					}
 				}
 
@@ -347,18 +393,17 @@ public:
 					}
 					head->next = NULL;
 					tableaus[fromIdx - 1].tail = head;
-					if(tableaus[fromIdx - 1].tail)
+					if (tableaus[fromIdx - 1].tail)
 						tableaus[fromIdx - 1].tail->val.isFaceUp = true;
-					return;
+					return true;
 				}
 				else if (tableaus[toIdx - 1].isEmpty() && x->val.rank != 13) {
-					return;
+					return false;
 				}
-
 
 				if (!isValidMove(x->val, tableaus[toIdx - 1].tail->val)) {
 					cout << "Invalid Move." << endl;
-					return;
+					return false;
 				}
 
 				moveCardBetweenTableaus(tableaus[fromIdx - 1], tableaus[toIdx - 1], noOfCards);
@@ -372,6 +417,7 @@ public:
 						}
 						else {
 							cout << "Only an ace card can be moved to empty foundation.";
+							return false;
 						}
 					}
 					else if (isValidMoveForF(c, foundations[toIdx - 1].top())) {
@@ -379,32 +425,40 @@ public:
 					}
 					else {
 						cout << "Cannot move this card to foundation";
+						return false;
 					}
 				}
 			}
 			else {
 				cout << "Invalid destination!" << endl;
+				return false;
 			}
 		}
 		else if (from == 2) {
 			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
 				if (!wastePile.empty())
-					moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
-				else
+					return moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
+				else {
 					cout << "Waste Pile is empty.";
+					return false;
+				}
 			}
 			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
 				if (!wastePile.empty())
-					moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
-				else
+					return moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
+				else {
 					cout << "Waste Pile is empty.";
+					return false;
+				}
 			}
 			else {
 				cout << "Invalid destination!" << endl;
+				return false;
 			}
 		}
 		else {
 			cout << "Invalid source!" << endl;
+			return false;
 		}
 	}
 
@@ -435,6 +489,7 @@ public:
 
 			int from = -1, fromIdx = -1, to = -1, toIdx = -1, noOfCards = -1;
 			bool lastCardFace = false;
+			bool valid = false;
 			if (cmd == "move") {
 				cout << "Enter source (1 for Tableau, 2 for Waste Pile): ";
 				cin >> from;
@@ -446,7 +501,7 @@ public:
 				cin >> to;
 				cout << "Enter the Number: ";
 				cin >> toIdx;
-				moveCards(from, fromIdx, to, toIdx, noOfCards, lastCardFace);
+				valid = moveCards(from, fromIdx, to, toIdx, noOfCards, lastCardFace);
 				char ch = _getch();
 				moves++;
 			}
@@ -489,7 +544,7 @@ public:
 									temp.push(tableaus[m.toIdx - 1].tail->val);
 									tableaus[m.toIdx - 1].deleteFromEnd();
 								}
-								if(tableaus[m.fromIdx - 1].tail)
+								if (tableaus[m.fromIdx - 1].tail)
 									tableaus[m.fromIdx - 1].tail->val.isFaceUp = m.face;
 								while (!temp.empty()) {
 									Card c = temp.top(); temp.pop();
@@ -536,7 +591,7 @@ public:
 				break;
 				char ch = _getch();
 			}
-			if (cmd == "move") {
+			if (cmd == "move" && valid) {
 				Move m(cmd, from, fromIdx, to, toIdx, noOfCards, lastCardFace);
 				undoStack.push(m);
 			}
@@ -559,7 +614,7 @@ void displayInstructions() {
 	std::cout << "1. The goal is to move all cards to the foundation piles.";
 	gotoxy(10, 9);
 	std::cout << "2. Build up each foundation by suit, from Ace to King.";
-	gotoxy(10, 11);	
+	gotoxy(10, 11);
 	std::cout << "3. You can move cards between tableau piles, building down by alternating colors.";
 	gotoxy(10, 13);
 	std::cout << "4. Use the stock pile to draw more cards if you get stuck.";
@@ -568,7 +623,7 @@ void displayInstructions() {
 
 	gotoxy(10, 18);
 	std::cout << "Press any key to return to the main menu.";
-	_getch();
+	char c = _getch();
 }
 
 void displayHeader() {
@@ -587,8 +642,8 @@ void displayHeader() {
 }
 
 void displayFrontPage() {
-	system("cls"); 
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15); 
+	system("cls");
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 
 	cout << "===============================" << endl;
 	cout << "        Welcome to Solitaire!    " << endl;
@@ -634,8 +689,23 @@ int main() {
 			int shfl = c - '0';
 
 			thread timerThread(startTimer);
-			SolitaireGame game(1);
-			game.play();
+			if (shfl == 0) {
+				SolitaireGame game(0);
+				game.play();
+			}
+			else if (shfl == 1) {
+				SolitaireGame game(1);
+				game.play();
+			}
+			else if (shfl == 2) {
+				SolitaireGame game(2);
+				game.play();
+			}
+			else if (shfl == 3) {
+				SolitaireGame game(3);
+				game.play();
+			}
+
 			keepRunning = false;
 			timerThread.join();
 		}
