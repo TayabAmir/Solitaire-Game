@@ -31,13 +31,11 @@ public:
             return;
         }
         cout << "Segmentation Fault!!";
-        exit(1);
     }
     T& top()
     {
         if (!list.isEmpty())
             return list.head->val;
         cout << "Segmentation Fault!!";
-        exit(1);
     }
 };
