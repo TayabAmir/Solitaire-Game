@@ -2,6 +2,11 @@
 
 This project is a C++ implementation of the Klondike Solitaire game. The game includes various components such as cards, moves, and data structures like linked lists, stacks, and queues to manage the game state.
 
+- Dependencies
+
+C++ Compiler
+If you are using VS Community, ensure you have the C++ development workload installed.
+
 - Game Components
 
 Tableau: Tableau is implemented with seven linked lists.
@@ -18,7 +23,7 @@ UI: Handles the user interface.
 Contains the entry point of the program. The file from where the project starts.
 
 
-                                        <----------- How to Play --------->
+                                             <----------- How to Play --------->
 
 - The game will initialize and display the initial layout of the cards.
 
