@@ -4,7 +4,7 @@ This project is a C++ implementation of the Klondike Solitaire game. The game in
 
 - Dependencies
 
-C++ Compiler
+C++ Compiler.
 If you are using VS Community, ensure you have the C++ development workload installed.
 
 - Game Components
