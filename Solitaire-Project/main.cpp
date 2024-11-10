@@ -22,29 +22,6 @@ using namespace std;
 atomic<bool> keepRunning(true);
 
 
-void startTimer() {
-	auto start = std::chrono::steady_clock::now();
-	while (keepRunning) {
-		auto now = chrono::steady_clock::now();
-		auto elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
-
-		CONSOLE_SCREEN_BUFFER_INFO csbi;
-		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-		GetConsoleScreenBufferInfo(hConsole, &csbi);
-		COORD originalCursorPosition = csbi.dwCursorPosition;
-
-		ConsoleUtility::gotoxy(115, 1);
-		ConsoleUtility::setConsoleColors(5, 15);
-		cout << "Time passed: " << elapsed << " seconds    " << flush;
-		ConsoleUtility::setConsoleColors(0, 15);
-
-		SetConsoleCursorPosition(hConsole, originalCursorPosition);
-
-		this_thread::sleep_for(chrono::seconds(1));
-	}
-}
-
-
 class SolitaireGame {
 private:
 	LinkedList<Card> tableaus[7];
@@ -53,6 +30,7 @@ private:
 	Stack<Move> undoStack, redoStack;
 	int moves, score;
 
+	// Checks valid move between tableaus
 	bool isValidMove(Card& c, Card& topCard) {
 		if ((c.rank == topCard.rank - 1) &&
 			(((c.suit == "Hearts" || c.suit == "Diamonds") && (topCard.suit == "Clubs" || topCard.suit == "Spades"))
@@ -62,11 +40,14 @@ private:
 		return false;
 	}
 
+	// Checks valid move to foundations
 	bool isValidMoveForF(Card& c, Card& topCard) {
 		return c.rank - 1 == topCard.rank && c.suit == topCard.suit;
 	}
 
+	// draw card from stockPile
 	void drawCard() {
+		moves++;
 		if (stockPile.empty()) {
 			score -= 100;
 			if (score < 0) score = 0;
@@ -84,6 +65,7 @@ private:
 		}
 	}
 
+	// when all 4 foundations are full, user wins.
 	bool win() {
 		for (int i = 0; i < 4; i++) {
 			if (foundations[i].size() != 13) {
@@ -93,9 +75,11 @@ private:
 		return true;
 	}
 
+	// move cards from one tableau to other tableau
 	void moveCardBetweenTableaus(LinkedList<Card>& from, LinkedList<Card>& to, int noOfCards) {
 		Node<Card>* head = from.head;
 		int s = from.size();
+		// if moving all cards from one tableau to another, then just connect the tail of destination ll to the head of source ll
 		if (s == noOfCards) {
 			if (to.tail) {
 				to.tail->next = head;
@@ -106,6 +90,7 @@ private:
 			to.tail = from.tail;
 			from.head = from.tail = NULL;
 		}
+		// else update pointers accordingly
 		else {
 			for (int i = 0; i < s - noOfCards - 1; i++) {
 				head = head->next;
@@ -123,6 +108,7 @@ private:
 		}
 	}
 
+	// moving card from waste pile to foundations
 	bool moveCardFromWtoF(Queue<Card>& w, Stack<Card>& f) {
 		Queue<Card> temp;
 		while (w.size() > 1) {
@@ -149,6 +135,7 @@ private:
 		return t;
 	}
 
+	// moving card from tableau to foundations
 	void moveCarFromTtoF(LinkedList<Card>& t, Stack<Card>& f) {
 		Card c = t.tail->val;
 		f.push(c);
@@ -157,6 +144,7 @@ private:
 			t.tail->val.isFaceUp = true;
 	}
 
+	// moving card from waste pile to tableau
 	bool moveCardFromWtoT(Queue<Card>& w, LinkedList<Card>& t) {
 		Queue<Card> temp;
 		while (w.size() > 1) {
@@ -183,6 +171,8 @@ private:
 			w.enqueue(c);
 		return valid;
 	}
+
+	// getting total face up cards in a tableau, helpful in moving cards.
 	int noofFaceupCards(LinkedList<Card>& ll) {
 		Node<Card>* temp = ll.head;
 		int s = 0;
@@ -200,18 +190,12 @@ public:
 		vector<Card> cards;
 		if (shuffle == 1) {
 			cards = {
-				Card(1, 2),
-				Card(2, 3), Card(3, 2),
-				Card(4, 6), Card(1, 5), Card(2, 4),
-				Card(3, 10), Card(4, 9), Card(1, 8), Card(2, 7),
-				Card(3, 13), Card(4, 12), Card(1, 11), Card(2, 1), Card(4, 2),
-				Card(3, 8), Card(1, 7), Card(1, 6), Card(4, 5), Card(3, 4), Card(1, 3),
-				Card(1, 13), Card(2, 12), Card(3, 11), Card(4, 10), Card(1, 9), Card(2, 8), Card(3, 7),
-
-				Card(1, 1), Card(2, 2), Card(2, 5), Card(2, 6), Card(2, 9), Card(2, 10), Card(2, 11), Card(2, 13), Card(3, 1), Card(3, 3),
-				Card(3, 5), Card(3, 6), Card(3, 9), Card(3, 12), Card(4, 1), Card(4, 3), Card(4, 4), Card(4, 7), Card(4, 8), Card(1, 10),
-				Card(4, 11), Card(4, 13), Card(1, 12), Card(1, 4)
-
+				Card(1, 1),Card(1, 3), Card(1, 2),Card(1, 6), Card(1, 5), Card(1, 4),Card(1, 10), Card(1, 9), Card(1, 8), Card(1, 7),
+				Card(2, 2), Card(2, 1), Card(1, 13), Card(1, 12), Card(1, 11),Card(2, 8), Card(2, 7), Card(2, 6), Card(2, 5), Card(2, 4),
+				Card(2, 3), Card(3, 2), Card(3, 1), Card(2, 13), Card(2, 12), Card(2, 11), Card(2, 10), Card(2, 9), Card(4, 13), Card(4, 12),
+				Card(4, 11), Card(4, 10), Card(4, 9), Card(4, 8), Card(4, 7), Card(4, 6), Card(4, 5), Card(4, 4), Card(4, 3),Card(4, 2),
+				Card(4, 1), Card(3, 13), Card(3, 12), Card(3, 11), Card(3, 10), Card(3, 9), Card(3, 8), Card(3, 7), Card(3, 6), Card(3, 5),
+				Card(3, 4), Card(3, 3)
 			};
 		}
 		else if (shuffle == 2) {
@@ -230,15 +214,15 @@ public:
 			cards = {
 				Card(1, 5), Card(1, 6), Card(3, 4), Card(3, 5), Card(1, 12), Card(3, 9), Card(3, 1), Card(1, 7), Card(1, 11), Card(3, 3),
 				Card(1, 1), Card(3, 8), Card(1, 8), Card(3, 13), Card(1, 4), Card(4, 1), Card(2, 12), Card(3, 6), Card(3, 7), Card(1, 9),
-				Card(3, 11), Card(2, 1), Card(3, 2), Card(3, 12), Card(1, 13), Card(1, 10), Card(3, 10), Card(4, 4), Card(2, 2), Card(2, 3),
-				Card(2, 4), Card(2, 5), Card(2, 6), Card(2, 7), Card(2, 8), Card(2, 9), Card(2, 10), Card(2, 11), Card(2, 13), Card(4, 2),
-				Card(4, 3), Card(4, 5), Card(4, 6), Card(4, 7), Card(4, 8), Card(4, 9), Card(4, 10), Card(4, 11), Card(4, 12), Card(4, 13),
-				Card(1, 2), Card(1, 3)
+				Card(3, 11), Card(2, 1), Card(3, 2), Card(3, 12), Card(1, 13), Card(1, 10), Card(3, 10), Card(4, 4), Card(4, 11), Card(2, 3),
+				Card(1, 2), Card(2, 5), Card(4, 7), Card(2, 7), Card(4, 3), Card(2, 9), Card(2, 10), Card(2, 11), Card(2, 13), Card(4, 2),
+				Card(2, 8), Card(4, 5), Card(4, 6), Card(2, 6), Card(4, 8), Card(1, 3), Card(4, 10), Card(2, 2), Card(4, 12), Card(4, 13),
+				Card(2, 4), Card(4, 9)
 			};
 		}
 
 		int cardIdx = 0;
-		for (int tableauIdx = 0; tableauIdx < 7; tableauIdx++) {
+		for (int tableauIdx = 0; tableauIdx < 7; tableauIdx++) { // populating tableaus
 			for (int card = 1; card <= tableauIdx + 1; card++) {
 				tableaus[tableauIdx].insertAtEnd(cards[cardIdx]);
 				if (card == tableauIdx + 1)
@@ -247,17 +231,19 @@ public:
 			}
 		}
 
-		while (cardIdx < cards.size()) {
+		while (cardIdx < cards.size()) { // populating stock pile
 			stockPile.enqueue(cards[cardIdx++]);
 		}
 		moves = score = 0;
 	}
 
-	bool moveCards(int from, int fromIdx, int to, int toIdx, int& noOfCards, bool& lastCardFace) {
-		if (from == 1 && fromIdx >= 1 && fromIdx <= 7) {
-			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
+	// function to move cards 
+	bool moveCards(int from, int fromIdx, int to, int toIdx, int& noOfCards, bool& lastCardFace, bool incScore) {
+
+		if (from == 1 && fromIdx >= 1 && fromIdx <= 7) { // if true, source is tableau
+			if (to == 1 && toIdx >= 1 && toIdx <= 7) { // if true, destination is tableau
 				if (noOfCards == -1) {
-					cout << "Enter Number of Cards you want to move: ";
+					cout << "Enter Number of Cards you want to move: "; // ask no of cards to move
 					cin >> noOfCards;
 
 					if (tableaus[fromIdx - 1].size() < noOfCards) {
@@ -302,7 +288,8 @@ public:
 					tableaus[fromIdx - 1].tail = head;
 					if (tableaus[fromIdx - 1].tail)
 						tableaus[fromIdx - 1].tail->val.isFaceUp = true;
-					score += 5;
+					if (incScore)
+						score += 5;
 					return true;
 				}
 				else if (tableaus[toIdx - 1].isEmpty() && x->val.rank != 13) {
@@ -315,15 +302,17 @@ public:
 					return false;
 				}
 
-				score += 5;
+				if (incScore)
+					score += 5;
 				moveCardBetweenTableaus(tableaus[fromIdx - 1], tableaus[toIdx - 1], noOfCards);
 			}
-			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
+			else if (to == 2 && toIdx >= 1 && toIdx <= 4) { // if true, destination is foundation
 				Card c = tableaus[fromIdx - 1].tail->val;
 				if (tableaus[fromIdx - 1].size() >= 1) {
 					if (foundations[toIdx - 1].empty()) {
 						if (c.rank == 1) {
-							score += 10;
+							if (incScore)
+								score += 10;
 							moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
 						}
 						else {
@@ -333,7 +322,8 @@ public:
 						}
 					}
 					else if (isValidMoveForF(c, foundations[toIdx - 1].top())) {
-						score += 10;
+						if (incScore)
+							score += 10;
 						moveCarFromTtoF(tableaus[fromIdx - 1], foundations[toIdx - 1]);
 					}
 					else {
@@ -349,11 +339,11 @@ public:
 				return false;
 			}
 		}
-		else if (from == 2) {
-			if (to == 1 && toIdx >= 1 && toIdx <= 7) {
+		else if (from == 2) { // if source is not tableau, then it is wastePile
+			if (to == 1 && toIdx >= 1 && toIdx <= 7) { // destination in tableau
 				if (!wastePile.empty()) {
 					bool res = moveCardFromWtoT(wastePile, tableaus[toIdx - 1]);
-					if (res) score += 5;
+					if (res && incScore) score += 5;
 					return res;
 				}
 				else {
@@ -362,10 +352,10 @@ public:
 					return false;
 				}
 			}
-			else if (to == 2 && toIdx >= 1 && toIdx <= 4) {
+			else if (to == 2 && toIdx >= 1 && toIdx <= 4) { // destination is foundation
 				if (!wastePile.empty()) {
 					bool res = moveCardFromWtoF(wastePile, foundations[toIdx - 1]);
-					if (res) score += 10;
+					if (res && incScore) score += 10;
 					return res;
 				}
 				else {
@@ -387,36 +377,45 @@ public:
 		}
 	}
 
+	//  moving from wastePile to stockPile, helpful in undo
 	void moveFromWToS() {
-		Queue<Card> temp;
-		while (wastePile.size() > 1) {
-			temp.enqueue(wastePile.peek());
+		if (!wastePile.empty()) {
+			Queue<Card> temp;
+			while (wastePile.size() > 1) {
+				temp.enqueue(wastePile.peek());
+				wastePile.dequeue();
+			}
+			Card c = wastePile.peek();
 			wastePile.dequeue();
+			while (!temp.empty()) {
+				wastePile.enqueue(temp.peek());
+				temp.dequeue();
+			}
+			stockPile.enqueue(c);
 		}
-		Card c = wastePile.peek();
-		wastePile.dequeue();
-		while (!temp.empty()) {
-			wastePile.enqueue(temp.peek());
-			temp.dequeue();
+		else {
+			while (!stockPile.empty()) {
+				wastePile.enqueue(stockPile.peek());
+				stockPile.dequeue();
+			}
 		}
-		stockPile.enqueue(c);
+
 	}
 
 	void play() {
-		string cmd;
 		while (true) {
 			ConsoleUtility::setConsoleColors(0, 15);
 			UI::displayGame(tableaus, foundations, stockPile, wastePile, score, moves);
 
 			ConsoleUtility::gotoxy(2, 33);
 			ConsoleUtility::setConsoleColors(5, 15);
-			cout << "Enter command (move, draw, quit): ";
-			cin >> cmd;
+			cout << "Press m for move, d for draw, z for undo, y for redo and q to quit";
+			char cmd = _getch();
 
 			int from = -1, fromIdx = -1, to = -1, toIdx = -1, noOfCards = -1;
 			bool lastCardFace = false;
-			bool valid = false;
-			if (cmd == "move") {
+			bool valid = false, incScore = true;
+			if (cmd == 'm') {
 				ConsoleUtility::gotoxy(2, 34);
 				cout << "Enter source (1 for Tableau, 2 for Waste Pile): ";
 				cin >> from;
@@ -432,14 +431,13 @@ public:
 				cout << "Enter the Number: ";
 				cin >> toIdx;
 				ConsoleUtility::gotoxy(2, 38);
-				valid = moveCards(from, fromIdx, to, toIdx, noOfCards, lastCardFace);
+				valid = moveCards(from, fromIdx, to, toIdx, noOfCards, lastCardFace, incScore);
 				char ch = _getch();
 			}
-			else if (cmd == "draw") {
+			else if (cmd == 'd') {
 				drawCard();
 			}
-			else if (cmd == "undo") {
-
+			else if (cmd == 'z') {
 				if (undoStack.empty()) {
 					ConsoleUtility::gotoxy(2, 38);
 					cout << "No move to undo :)";
@@ -450,7 +448,7 @@ public:
 					undoStack.pop();
 					redoStack.push(m);
 
-					if (m.cmd == "draw") {
+					if (m.cmd == 'd') {
 						moveFromWToS();
 					}
 					else {
@@ -484,14 +482,15 @@ public:
 							else {
 								Card c = foundations[m.toIdx - 1].top();
 								foundations[m.toIdx - 1].pop();
-								tableaus[m.fromIdx - 1].tail->val.isFaceUp = false;
+								if (tableaus[m.fromIdx - 1].tail)
+									tableaus[m.fromIdx - 1].tail->val.isFaceUp = false;
 								tableaus[m.fromIdx - 1].insertAtEnd(c);
 							}
 						}
 					}
 				}
 			}
-			else if (cmd == "redo") {
+			else if (cmd == 'y') {
 				if (redoStack.empty()) {
 					ConsoleUtility::gotoxy(2, 38);
 					cout << "No Move to Redo :(";
@@ -501,16 +500,18 @@ public:
 					Move m = redoStack.top();
 					undoStack.push(m);
 					redoStack.pop();
-					if (m.cmd == "draw") {
+					if (m.cmd == 'd') {
 						drawCard();
 					}
-					else if (m.cmd == "move") {
-						moveCards(m.from, m.fromIdx, m.to, m.toIdx, m.noOfCards, m.face);
+					else if (m.cmd == 'm') {
+						moveCards(m.from, m.fromIdx, m.to, m.toIdx, m.noOfCards, m.face, false);
 					}
 				}
 			}
-			else if (cmd == "quit") {
-				break;
+			else if (cmd == 'q') {
+				cout << endl << endl << "Quiting game.";
+				Sleep(50);
+				exit(1);
 			}
 			else {
 				ConsoleUtility::gotoxy(2, 38);
@@ -520,17 +521,16 @@ public:
 			ConsoleUtility::setConsoleColors(0, 15);
 			if (win()) {
 				UI::displayGame(tableaus, foundations, stockPile, wastePile, score, moves);
-				cout << endl << "Congratulations! You've won the game!" << endl;
-				break;
-				char ch = _getch();
+				UI::displayWinningScreen(score, moves);
+				exit(1);
 			}
 			if (valid)
 				moves++;
-			if (cmd == "move" && valid) {
+			if (cmd == 'm' && valid) {
 				Move m(cmd, from, fromIdx, to, toIdx, noOfCards, lastCardFace);
 				undoStack.push(m);
 			}
-			else if (cmd == "draw") {
+			else if (cmd == 'd') {
 				Move m(cmd);
 				undoStack.push(m);
 			}
@@ -538,11 +538,32 @@ public:
 	}
 };
 
+void startTimer() {
+	auto start = std::chrono::steady_clock::now();
+	while (keepRunning) {
+		auto now = chrono::steady_clock::now();
+		auto elapsed = chrono::duration_cast<chrono::seconds>(now - start).count();
+
+		CONSOLE_SCREEN_BUFFER_INFO csbi;
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		GetConsoleScreenBufferInfo(hConsole, &csbi);
+		COORD originalCursorPosition = csbi.dwCursorPosition;
+
+		ConsoleUtility::gotoxy(115, 1);
+		ConsoleUtility::setConsoleColors(5, 15);
+		cout << "Time passed: " << elapsed << " seconds    " << flush;
+		ConsoleUtility::setConsoleColors(0, 15);
+
+		SetConsoleCursorPosition(hConsole, originalCursorPosition);
+
+		this_thread::sleep_for(chrono::seconds(1));
+	}
+}
 
 int main() {
 
 	while (true) {
-	ConsoleUtility::setConsoleColors(0, 15);
+		ConsoleUtility::setConsoleColors(0, 15);
 		UI::displayFrontPage();
 		char choice = _getch();
 

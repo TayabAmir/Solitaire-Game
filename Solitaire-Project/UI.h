@@ -190,7 +190,7 @@ public:
 			temp.peek().display();
 		}
 
-		ConsoleUtility::gotoxy(95, 1 + y);
+		ConsoleUtility::gotoxy(104, 1 + y);
 		ConsoleUtility::setConsoleColors(2, 15);
 		cout << "Foundations";
 		ConsoleUtility::setConsoleColors(0, 15);
@@ -223,6 +223,39 @@ public:
 		cout << "Score: " << score;
 		ConsoleUtility::setConsoleColors(0, 15);
 
+	}
+
+	static void displayWinningScreen(int score, int moves) {
+		system("cls");
+		displayHeader();
+		int x = 60, y = 10;
+		ConsoleUtility::gotoxy(x, y);
+		ConsoleUtility::setConsoleColors(1, 15);
+		cout << "Congratulations!" << endl;
+
+		ConsoleUtility::gotoxy(x, y+1);
+		cout << "You've won the game!" << endl;
+
+		ConsoleUtility::gotoxy(x, y+3);
+		cout << "Score: " << score << endl;
+
+		ConsoleUtility::gotoxy(x, y+5);
+		cout << "Moves: " << moves << endl;
+		ConsoleUtility::setConsoleColors(4, 15);
+
+		ConsoleUtility::gotoxy(x-10, y+10);
+		cout << "*****************************************" << endl;
+		ConsoleUtility::gotoxy(x-10, y+11);
+		cout << "*                                       *" << endl;
+		ConsoleUtility::gotoxy(x-10, y+12);
+		cout << "*        Thank you for playing!          *" << endl;
+		ConsoleUtility::gotoxy(x-10, y+13);
+		cout << "*                                       *" << endl;
+		ConsoleUtility::gotoxy(x-10, y+14);
+		cout << "*****************************************" << endl;
+		ConsoleUtility::setConsoleColors(0, 15);
+	
+		ConsoleUtility::gotoxy(0, 30);
 	}
 
 	static void printTableau(Node<Card>* temp, int x, int y) {
