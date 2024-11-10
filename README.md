@@ -32,15 +32,15 @@ Game Commands:
    --- In source 1 represents a tableau, and 2 represents a waste pile and for destination 1 represents tableau and 2 represents foundation. When you select tableau and foundation, you also have to specify the number. And for moving cards between the tableaus, you also have to tell the number of cards.
     
    *Enter the commands line by line as the game asks you*
-
-   - Moving cards between tableaus: For example, to move 2 cards from tableau 2 to tableau 5, you might use a command like `move 1 2 1 5 2`.
-   - Move from Waste to Foundation: For example, to move card from waste to foundation 3, use a command like `move 2 2 3`.
-   - Move from Tableau to Foundation: To move a card from tableau 2 to foundation 4, use a command like `move 1 2 2 4`.
-   - Move from Waste to Tableau: To move a card from the waste pile to a tableau 4, use a command like `move 2 1 4`.
-   - Draw a Card: To draw a card from the stock pile to the waste pile, use the command `draw`.
-   - Undo a Move: To undo the last move, use the command `undo`.
-   - Redo a Move: To redo the last undone move, use the command `redo`.
-   - Quit game: To quit the game, use the command `quit`.
+   - Move a Card: To perform the moving functionality, press `m`.
+   - Moving cards between tableaus: For example, to move 2 cards from tableau 2 to tableau 5, you might use a command like `1 2 1 5 2`.
+   - Move from Waste to Foundation: For example, to move card from waste to foundation 3, use a command like `2 2 3`.
+   - Move from Tableau to Foundation: To move a card from tableau 2 to foundation 4, use a command like `1 2 2 4`.
+   - Move from Waste to Tableau: To move a card from the waste pile to a tableau 4, use a command like `2 1 4`.
+   - Draw a Card: To draw a card from the stock pile to the waste pile, press `d`.
+   - Undo a Move: To undo the last move, press `z`.
+   - Redo a Move: To redo the last undone move, press `y`.
+   - Quit game: To quit the game, press `q`.
 
 Winning the Game:
    - The game is won when all cards are moved to the foundation piles in the correct order (Ace to King for each suit).
